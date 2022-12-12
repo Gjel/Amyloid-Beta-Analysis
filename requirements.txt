@@ -1,0 +1,4 @@
+pyvips
+numpy
+scipy
+paquo
