@@ -132,4 +132,6 @@ dmypy.json
 .idea/
 
 # misc
-klad.py
+klad*.py
+test/
+src/pre_proccessing/

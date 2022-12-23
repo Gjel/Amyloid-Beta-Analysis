@@ -60,6 +60,8 @@ class MyTestCase(unittest.TestCase):
 
     def test_pixel_batch(self):
         it = pp.PatchIterator(FILE_PATH, label_type=pp.LabelEnum.PIXEL)
+        it.row = 4
+        it.column = 100
         patch_batch, label_batch = it.get_batch(128)
         self.assertEqual((128, 256, 256, 3), patch_batch.shape)
         self.assertEqual((128, 256, 256), label_batch.shape)
@@ -69,11 +71,11 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(len(project.images), 463)
 
     def test_get_image_name_from_path(self):
-        name = pp.project.get_image_name_from_path(FILE_PATH)
+        name = src.data_preparation.project.get_image_name_from_path(FILE_PATH)
         self.assertEqual('Image_2013-095_F2_BA4.vsi - 20x_BF_01', name)
 
     def test_get_image_from_project(self):
-        name = pp.project.get_image_name_from_path(FILE_PATH)
+        name = src.data_preparation.project.get_image_name_from_path(FILE_PATH)
         image = pp.Project.get_image(name)
         self.assertIsNotNone(image)
 

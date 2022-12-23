@@ -11,11 +11,11 @@ def get_image_name_from_path(path: str):
 
 class Project:
 
-    PROJECT = None
+    PROJECT: paquo.projects.QuPathProject = None
     PROJECT_PATH = "F:/QuPath Abeta images 100+/Qupath data/project.qpproj"
 
     @classmethod
-    def get_project(cls):
+    def get_project(cls) -> paquo.projects.QuPathProject:
         if not cls.PROJECT:
             cls.PROJECT = paquo.projects.QuPathProject(cls.PROJECT_PATH)
         return cls.PROJECT

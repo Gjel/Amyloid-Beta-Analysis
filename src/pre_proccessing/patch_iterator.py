@@ -5,7 +5,7 @@ import numpy as np
 
 from .util import *
 from .get_patch import get_patch_from_image, get_random_patch
-from .label_enum import LabelEnum
+from src.util.label_enum import LabelEnum
 
 
 class PatchIterator:
@@ -35,6 +35,8 @@ class PatchIterator:
 
     def __next__(self) -> tuple[np.ndarray, Union[None, bool, np.ndarray]]:
         if self.row == self.max_row:
+            raise NotImplementedError
+        elif self.row > self.max_row:
             raise StopIteration
         patch, label = get_patch_from_image(
             self._image,
@@ -45,11 +47,27 @@ class PatchIterator:
         )
         self.column += 1
         if self.column == self.max_column:
+            return self.get_last_patch_in_row(self.row)
+        elif self.column > self.max_column:
             self.row += 1
             self.column = 0
         return patch, label
 
-    def get_batch(self, batch_size: int) -> tuple[np.ndarray, Union[None, bool, np.ndarray]]:
+    def next_with_coords(self):
+        x = self.column * self.patch_size
+        y = self.row * self.patch_size
+        patch, label = self.__next__()
+        return patch, label, x, y
+
+    def has_next(self):
+        return self.row != self.max_row
+
+    def get_last_patch_in_row(self, row):
+        left = self._image.width - self.patch_size
+        top = row * self.patch_size
+        return get_patch_from_image(self._image, left, top, self.patch_size, self.label_type)
+
+    def get_batch(self, batch_size: int) -> tuple[np.ndarray, Union[None, np.ndarray]]:
         """
         A method that returns a batch of patches from the image.
         :param batch_size: The size of the batch
@@ -89,7 +107,7 @@ class RandomPatchIterator:
     def __next__(self):
         return get_random_patch(self.data_path, self.patch_size, self.label_type)
 
-    def get_batch(self, batch_size: int) -> np.ndarray:
+    def get_batch(self, batch_size: int) -> tuple[np.ndarray, Union[None, np.ndarray]]:
         """
         A method that returns a batch of patches from the dataset.
         :param batch_size: The size of the batch
@@ -106,7 +124,4 @@ class RandomPatchIterator:
             if self.label_type != LabelEnum.NO:
                 label_batch[i] = labels
         return batch, label_batch
-        # batch = np.zeros((batch_size, self.patch_size, self.patch_size, 3), dtype=np.uint8)  # TODO: remove magic number
-        # for i in range(batch_size):
-        #     batch[i] = self.__next__()
-        # return batch
+

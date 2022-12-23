@@ -4,11 +4,13 @@ from typing import Union
 
 import pyvips as pv
 import numpy as np
-from shapely.geometry import Point, MultiPoint
+from shapely.geometry import Point, Polygon
+from rasterio.features import rasterize
+from rasterio.transform import Affine
 
 from .util import *
-from .label_enum import LabelEnum
-from .project import Project
+from src.util.label_enum import LabelEnum
+from src.data_preparation.project import Project
 
 def get_patch_from_path(
         file_path: str,
@@ -117,19 +119,21 @@ def get_patch_pixel_labels(
     :return: a size x size numpy array where a cell is true if that pixel is annotated as grey matter and false
     otherwise.
     """
-    x = np.arange(left, left + size)
-    y = np.arange(top, top + size)
-    points = MultiPoint(np.transpose([np.tile(x, len(y)), np.repeat(y, len(x))]))
+    # x = np.arange(left, left + size)
+    # y = np.arange(top, top + size)
+    # points = MultiPoint(np.transpose([np.tile(x, len(y)), np.repeat(y, len(x))]))
+
+    square = Polygon([(left, top), (left+size, top), (left+size, top+size), (left, top+size), (left, top)])
 
     image_entry = Project.get_image_from_path(image.filename)
     roi = image_entry.hierarchy.annotations[0].roi
 
-    intersection = points.intersection(roi)
-    labels = np.zeros((size, size), dtype=bool)
+    intersection = square.intersection(roi)
+    labels = np.zeros((size, size), dtype=np.uint8)
     if not intersection.is_empty:
-        for point in intersection:
-            labels[int(point.x) - left, int(point.y) - top] = True
-    return labels
+        transform = Affine(1, 0, left, 0, 1, top)
+        rasterize([intersection], out=labels, transform=transform, default_value=1)
+    return labels.astype(bool)
 
 
 
