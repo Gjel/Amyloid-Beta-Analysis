@@ -2,5 +2,6 @@ from enum import Enum
 
 class LabelEnum(Enum):
     NO = 0
-    CLASS = 1
-    PIXEL = 2
+    CLASS_AVG = 1
+    CLASS_MIDDLE = 2
+    PIXEL = 3

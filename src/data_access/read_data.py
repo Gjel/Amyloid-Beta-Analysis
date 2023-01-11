@@ -14,14 +14,19 @@ def rec_read(group, lvl=0):
 
 
 class ImageIterator:
-    def __init__(self, image_group: h5py.Group, size: int, stride: int, label_type: LabelEnum):
+    def __init__(self, image_group: h5py.Group, size: int, stride: int, batch_size: int, label_type: LabelEnum):
         self.image_group = image_group
         self.size = size
         self.stride = stride
+        self.batch_size = batch_size
         self.label_type = label_type
 
-        self.label_it = LabelIterator(image_group['labels'], size, stride, label_type)
-        self.vsi_it = VsiIterator(image_group['vsi_path'].asstr()[()], size, stride)
+        self.label_it = LabelIterator(image_group['labels'], size, stride, batch_size, label_type)
+        self.vsi_it = VsiIterator(self.get_vsi_path(), size, stride, batch_size)
+
+    def get_vsi_path(self):
+        root = os.path.dirname(self.image_group.file.filename)
+        return os.path.join(root, self.image_group['vsi_path'].asstr()[()])
 
     def __enter__(self):
         self.vsi_it.open()
@@ -46,17 +51,24 @@ class ImageIterator:
         label = self.label_it.__next__()
         return patch, label
 
-    def get_batch(self, batch_size: int):
-        patch_batch = self.vsi_it.get_batch(batch_size)
-        label_batch = self.label_it.get_batch(batch_size)
-        return patch_batch, label_batch
+    def set_current_patch(self, row: int, column: int):
+        self.vsi_it.set_current_patch(row, column)
+        self.label_it.set_current_patch(row, column)
+
+    def get_current_patch_coords(self):
+        vsi_coords = self.vsi_it.get_current_patch_coords()
+        label_coords = self.label_it.get_current_patch_coords()
+        if vsi_coords != label_coords:
+            raise ValueError(f"Patch iterators are out of sync: vsi {vsi_coords}, label {label_coords}")
+        return vsi_coords
 
 
 class DataIterator:
-    def __init__(self, data_group: h5py.Group, size: int, stride: int, label_type: LabelEnum):
+    def __init__(self, data_group: h5py.Group, size: int, stride: int, batch_size: int, label_type: LabelEnum):
         self.data_group = data_group
         self.size = size
         self.stride = stride
+        self.batch_size = batch_size
         self.label_type = label_type
 
         self.image_list = [key for key in data_group.keys()]
@@ -69,7 +81,8 @@ class DataIterator:
             self.data_group[self.image_list[self.current_image_index]],
             self.size,
             self.stride,
-            self.label_type
+            self.batch_size,
+            self.label_type,
         )
 
     def __enter__(self):
@@ -102,6 +115,9 @@ class DataIterator:
         if self.current_image_index == self.num_images:
             raise StopIteration
         self.image_it = self.init_image_it()
+
+
+
 
 
 

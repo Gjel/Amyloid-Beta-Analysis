@@ -56,6 +56,7 @@ def write_ground_truth(image_entry: QuPathProjectImageEntry, target_group: h5py.
     s = PATCH_SIZE
     it = PatchCoordinateIterator(image_entry.width, image_entry.height, s, s)
     for n, m in it:
+        # print('row', it.row, 'of', it.num_height, ' column', it.column, 'of', it.num_width)
         ground_truth = get_patch_pixel_labels(image_entry, m, n, s)
         data[n:n+s, m:m+s] = ground_truth
 
